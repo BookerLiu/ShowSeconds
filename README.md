@@ -1,5 +1,6 @@
 # ShowSeconds
-- **弥补Windows 11 不显示秒数的小工具**
+- **弥补Windows 11 不显示秒数的小工具**   
+- [去下载](https://github.com/BookerLiu/ShowSeconds/releases/tag/1.0.0)
 
 ## 效果
 <img src = 'https://s3.bmp.ovh/imgs/2022/07/12/fc6e1f4c6831cea7.gif' width='600'>
