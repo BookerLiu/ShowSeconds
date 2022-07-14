@@ -36,7 +36,9 @@ namespace ShowSeconds
         private bool expandClock = true; //是否展开时钟
         private System.Windows.Forms.Timer timer;
 
-        private double proportion = 0.82;
+        private double lProportion = 0.82;
+        private double tProportion = 0.03;
+        private int sleepTime = 800;
         public SecondsWindow()
         {
             SecondsDataContext dc = new SecondsDataContext
@@ -48,10 +50,15 @@ namespace ShowSeconds
 
             try
             {
-                proportion = Convert.ToDouble(ConfigurationManager.AppSettings["Proportion"]);
-            } catch (Exception)
+                lProportion = Convert.ToDouble(ConfigurationManager.AppSettings["LProportion"]);
+                tProportion = Convert.ToDouble(ConfigurationManager.AppSettings["TProportion"]);
+                sleepTime = Convert.ToInt32(ConfigurationManager.AppSettings["DelayTime"]);
+            }
+            catch (Exception)
             {
-                proportion = 0.82;
+                lProportion = 0.82;
+                tProportion = 0.03;
+                sleepTime = 800;
             }
 
             InitializeComponent();
@@ -116,7 +123,6 @@ namespace ShowSeconds
             {
                 if (ScreenUtil.IsPrimaryFullScreen()) return;
 
-                int sleepTime = 800;
                 App.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, new Action(() =>
                 {
                     int x = e.X;
@@ -158,8 +164,8 @@ namespace ShowSeconds
                                    FormatMS(DateTime.Now.Minute) + ":" +
                                    FormatMS(DateTime.Now.Second);
 
-                                int sx = (int)(width * proportion);
-                                int sMarginBottom = (int)(height * 0.03);
+                                int sx = (int)(width * lProportion);
+                                int sMarginBottom = (int)(height * tProportion);
                                 Left = sx - Width;
                                 Top = SystemParameters.WorkArea.Height - Height;
                                 Console.WriteLine(Left + "=" + Top + "=" + sx + "=" + Width + "=" + width);
