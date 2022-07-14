@@ -36,6 +36,9 @@ namespace ShowSeconds
         private bool expandClock = true; //是否展开时钟
         private System.Windows.Forms.Timer timer;
 
+        Dispatcher secondsDP = DispatcherBuild.Build();
+        IKeyboardMouseEvents secondsHook = Hook.GlobalEvents();
+
         private double lProportion = 0.82;
         private double tProportion = 0.03;
         private int sleepTime = 800;
@@ -81,9 +84,6 @@ namespace ShowSeconds
             timer = new System.Windows.Forms.Timer();
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
-
-            Dispatcher secondsDP = DispatcherBuild.Build();
-            IKeyboardMouseEvents secondsHook = Hook.GlobalEvents();
             secondsDP.Invoke((Action)(() =>
             {
                 secondsHook.MouseDownExt += SecondsBakColorFun;
@@ -251,12 +251,29 @@ namespace ShowSeconds
                 
                 if ("Shutdown".Equals(cds.msg))
                 {
+                    Dispose();
                     Application.Current.Shutdown();
                 }
             }
             return hwnd;
         }
 
+
+        public void Dispose()
+        {
+            try
+            {
+                if (secondsHook != null)
+                {
+                    secondsHook.MouseDownExt -= SecondsBakColorFun;
+                    secondsHook.MouseUpExt -= SecondsHookSetFuc;
+                    secondsHook.Dispose();
+                    secondsDP.InvokeShutdown();
+                }
+
+            }
+            catch (Exception ex) { }
+        }
 
     }
 }
