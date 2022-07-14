@@ -3,6 +3,7 @@ using ShowSeconds.Util;
 using ShowSeconds.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -33,6 +35,8 @@ namespace ShowSeconds
 
         private bool expandClock = true; //是否展开时钟
         private System.Windows.Forms.Timer timer;
+
+        private double proportion = 0.82;
         public SecondsWindow()
         {
             SecondsDataContext dc = new SecondsDataContext
@@ -41,6 +45,15 @@ namespace ShowSeconds
                         FormatMS(DateTime.Now.Minute) + ":" +
                         FormatMS(DateTime.Now.Second)
             };
+
+            try
+            {
+                proportion = Convert.ToDouble(ConfigurationManager.AppSettings["Proportion"]);
+            } catch (Exception)
+            {
+                proportion = 0.82;
+            }
+
             InitializeComponent();
             SolidColorBrush scb = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 47, 52, 44))
             {
@@ -52,6 +65,8 @@ namespace ShowSeconds
             BGBorder.Visibility = Visibility.Collapsed;
             this.Show();
         }
+
+
 
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -143,15 +158,18 @@ namespace ShowSeconds
                                    FormatMS(DateTime.Now.Minute) + ":" +
                                    FormatMS(DateTime.Now.Second);
 
-                                int sx = (int)(SystemParameters.PrimaryScreenWidth * 0.82);
-                                int sMarginBottom = (int)(SystemParameters.WorkArea.Height * 0.03);
+                                int sx = (int)(width * proportion);
+                                int sMarginBottom = (int)(height * 0.03);
                                 Left = sx - Width;
                                 Top = SystemParameters.WorkArea.Height - Height;
+                                Console.WriteLine(Left + "=" + Top + "=" + sx + "=" + Width + "=" + width);
+                                this.Visibility = Visibility.Visible;
                                 BGBorder.Visibility = Visibility.Visible;
                                 timer.Start();
                             }
                             else
                             {
+                                this.Visibility = Visibility.Collapsed;
                                 BGBorder.Visibility= Visibility.Collapsed;
                                 timer.Stop();
                             }
@@ -170,6 +188,7 @@ namespace ShowSeconds
                               || y > 1020 / h * height)
                               )
                         {
+                            this.Visibility = Visibility.Collapsed;
                             BGBorder.Visibility = Visibility.Collapsed;
                             timer.Stop();
                         }
@@ -206,6 +225,32 @@ namespace ShowSeconds
             System.Drawing.Point p = new System.Drawing.Point((int)(w2 / w * width), (int)(h2 / h * height));
             return ScreenUtil.GetColorAt(p);
         }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            HwndSource hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            if (hwndSource != null)
+            {
+                IntPtr handle = hwndSource.Handle;
+                hwndSource.AddHook(new HwndSourceHook(WndProc));
+            }
+        }
+
+        IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == MessageUtil.WM_COPYDATA)
+            {
+                MessageUtil.CopyDataStruct cds = (MessageUtil.CopyDataStruct)System.Runtime.InteropServices.Marshal.PtrToStructure(lParam, typeof(MessageUtil.CopyDataStruct));
+                
+                if ("Shutdown".Equals(cds.msg))
+                {
+                    Application.Current.Shutdown();
+                }
+            }
+            return hwnd;
+        }
+
 
     }
 }
