@@ -248,10 +248,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Common\Constants.cs" />
     <Compile Include="SecondsWindow.xaml.cs">
       <DependentUpon>SecondsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Util\DispatcherBuild.cs" />
+    <Compile Include="Util\HideWindowUtil.cs" />
     <Compile Include="Util\MessageUtil.cs" />
     <Compile Include="Util\ScreenUtil.cs" />
     <Compile Include="ViewModel\SecondsDataContext.cs" />

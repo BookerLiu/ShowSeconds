@@ -22,7 +22,7 @@
             <DropShadowEffect BlurRadius="20" Direction="-90" Color="Gray"
                               RenderingBias="Quality" ShadowDepth="2"/>
         </Grid.Effect>
-        <Border x:Name="BGBorder" CornerRadius="8" xf:Animations.Primary="{xf:Animate BasedOn={StaticResource SlideFromRight}, Event=Visibility, Delay=0}">
+        <Border x:Name="BGBorder" CornerRadius="8" xf:Animations.Primary="{xf:Animate BasedOn={StaticResource FadeInAndSlideFromRight}, Event=Visibility, Delay=0}">
             <TextBlock x:Name="SecondsText" HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        FontSize="25"

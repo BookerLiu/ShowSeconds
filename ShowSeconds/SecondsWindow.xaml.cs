@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,11 +17,11 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using static ShowSeconds.Util.HideWindowUtil;
 
 namespace ShowSeconds
 {
@@ -30,8 +31,34 @@ namespace ShowSeconds
     public partial class SecondsWindow : Window
     {
 
-        private System.Drawing.Color beforeColor;
-        private System.Drawing.Color topBeforeColor;
+        private Color beforeColor;
+        private Color topBeforeColor;
+
+        //dark theam
+        private readonly static System.Windows.Media.SolidColorBrush darkBG
+            = new System.Windows.Media.SolidColorBrush
+            {
+                Color = System.Windows.Media.Color.FromRgb(46, 50, 54),
+                Opacity = 0.8
+            };
+        private readonly static System.Windows.Media.SolidColorBrush darkFont
+            = new System.Windows.Media.SolidColorBrush
+            {
+                Color = System.Windows.Media.Color.FromRgb(255, 255, 255)
+            };
+
+        //light theam
+        private readonly static System.Windows.Media.SolidColorBrush lightBG
+            = new System.Windows.Media.SolidColorBrush
+            {
+                Color = System.Windows.Media.Color.FromRgb(236, 244, 251),
+                Opacity = 1
+            };
+        private readonly static System.Windows.Media.SolidColorBrush lightFont
+            = new System.Windows.Media.SolidColorBrush
+            {
+                Color = System.Windows.Media.Color.FromRgb(65, 63, 61),
+            };
 
         private bool expandClock = true; //是否展开时钟
         private System.Windows.Forms.Timer timer;
@@ -65,17 +92,19 @@ namespace ShowSeconds
             }
 
             InitializeComponent();
-            SolidColorBrush scb = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 47, 52, 44))
-            {
-                Opacity = 0.8
-            };
-            BGBorder.Background = scb;
             this.DataContext = dc;
             this.Topmost = true;
             BGBorder.Visibility = Visibility.Collapsed;
             this.Show();
         }
 
+        private void HideAltTab()
+        {
+            WindowInteropHelper wndHelper = new WindowInteropHelper(this);
+            int exStyle = (int)GetWindowLong(wndHelper.Handle, (int)GetWindowLongFields.GWL_EXSTYLE);
+            exStyle |= (int)ExtendedWindowStyles.WS_EX_TOOLWINDOW;
+            SetWindowLong(wndHelper.Handle, (int)GetWindowLongFields.GWL_EXSTYLE, (IntPtr)exStyle);
+        }
 
 
 
@@ -89,6 +118,7 @@ namespace ShowSeconds
                 secondsHook.MouseDownExt += SecondsBakColorFun;
                 secondsHook.MouseUpExt += SecondsHookSetFuc;
             }));
+            HideAltTab();
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -127,24 +157,33 @@ namespace ShowSeconds
                 {
                     int x = e.X;
                     int y = e.Y;
+
+                    //获取实际坐标  windows可能会有缩放
+                    IntPtr hdc = GetDC(IntPtr.Zero);
+                    double scale = GetScreenScalingFactor();
+                    
+                    x = (int)(x / scale);
+                    y = (int)(y / scale);
+
                     double w = 1920;
                     double h = 1080;
                     double width = SystemParameters.PrimaryScreenWidth;
                     double height = SystemParameters.PrimaryScreenHeight;
+                    
                     if (x > 1843 / w * width
                         && x < 1907 / w * width
                         && y > 1037 / h * height
                         && y < 1074 / h * height)
                     {
                         Thread.Sleep(sleepTime);
-                        System.Drawing.Color c = GetBottomBeforeColor();
+                        Color c = GetBottomBeforeColor();
                         if (c.A != beforeColor.A
                             || c.R != beforeColor.R
                             || c.G != beforeColor.G
                             || c.B != beforeColor.B)
                         {
                             //判断是否展开时钟
-                            System.Drawing.Color ct = GetTopBeforeColor();
+                            Color ct = GetTopBeforeColor();
                             if (ct.A != topBeforeColor.A
                             || ct.R != topBeforeColor.R
                             || ct.G != topBeforeColor.G
@@ -159,6 +198,20 @@ namespace ShowSeconds
 
                             if (!BGBorder.IsVisible)
                             {
+                                Color theamColor = GetColor(1919, 1079);
+                                if (CalculateLight(theamColor) > 255 / 2)
+                                {
+                                    //light
+                                    BGBorder.Background = lightBG;
+                                    SecondsText.Foreground = lightFont;
+                                }
+                                else
+                                {
+                                    // dark
+                                    BGBorder.Background = darkBG;
+                                    SecondsText.Foreground = darkFont;
+                                }
+
                                 SecondsDataContext dc = this.DataContext as SecondsDataContext;
                                 dc.Seconds = (DateTime.Now.Hour).ToString() + ":" +
                                    FormatMS(DateTime.Now.Minute) + ":" +
@@ -168,22 +221,17 @@ namespace ShowSeconds
                                 int sMarginBottom = (int)(height * tProportion);
                                 Left = sx - Width;
                                 Top = SystemParameters.WorkArea.Height - Height;
-                                Console.WriteLine(Left + "=" + Top + "=" + sx + "=" + Width + "=" + width);
-                                this.Visibility = Visibility.Visible;
                                 BGBorder.Visibility = Visibility.Visible;
                                 timer.Start();
                             }
                             else
                             {
-                                this.Visibility = Visibility.Collapsed;
                                 BGBorder.Visibility= Visibility.Collapsed;
                                 timer.Stop();
                             }
                         }
                     }
-                    else if (true)
-                    {
-                        if ((expandClock && (x < 1574 / w * width
+                    else if ((expandClock && (x < 1574 / w * width
                               || x > 1906 / w * width
                               || y < 598 / h * height
                               || y > 1020 / h * height)
@@ -193,11 +241,9 @@ namespace ShowSeconds
                               || y < 950 / h * height
                               || y > 1020 / h * height)
                               )
-                        {
-                            this.Visibility = Visibility.Collapsed;
-                            BGBorder.Visibility = Visibility.Collapsed;
-                            timer.Stop();
-                        }
+                    {
+                        BGBorder.Visibility = Visibility.Collapsed;
+                        timer.Stop();
                     }
                 }));
             }
@@ -212,23 +258,27 @@ namespace ShowSeconds
             }
         }
 
-        private static System.Drawing.Color GetBottomBeforeColor()
+        private static Color GetBottomBeforeColor()
         {
             return GetColor(1760, 985);
         }
 
-        private static System.Drawing.Color GetTopBeforeColor()
+        private static Color GetTopBeforeColor()
         {
             return GetColor(1751, 693);
         }
 
-        private static System.Drawing.Color GetColor(int w2, int h2)
+        private static Color GetColor(int w2, int h2)
         {
             double w = 1920;
             double h = 1080;
             double width = SystemParameters.PrimaryScreenWidth;
             double height = SystemParameters.PrimaryScreenHeight;
-            System.Drawing.Point p = new System.Drawing.Point((int)(w2 / w * width), (int)(h2 / h * height));
+            double scale = GetScreenScalingFactor();
+
+            Console.WriteLine("bef:" + w2 / w * width);
+            Console.WriteLine("af:" + w2 / w * width * scale);
+            System.Drawing.Point p = new System.Drawing.Point((int)(w2 / w * width * scale), (int)(h2 / h * height * scale));
             return ScreenUtil.GetColorAt(p);
         }
 
@@ -275,5 +325,63 @@ namespace ShowSeconds
             catch (Exception ex) { }
         }
 
+        private static int CalculateLight(Color color)
+        {
+            int[] colorArr = new int[] {color.R, color.G, color.B};
+
+            int max = 0;
+            int min = 255;
+            foreach (int i in colorArr)
+            {
+                max = Math.Max(max, i);
+                min = Math.Min(min, i);
+            }
+            int avg = (max + min) / 2;
+            return avg;
+        }
+
+
+
+        //#######################################################
+        public const int HORZRES = 8;
+        public const int VERTRES = 10;
+        public const int DESKTOPVERTRES = 117;
+        public const int DESKTOPHORZRES = 118;
+
+        private static double GetScreenScalingFactor()
+        {
+            var g = Graphics.FromHwnd(IntPtr.Zero);
+            IntPtr desktop = g.GetHdc();
+            var physicalScreenHeight = GetDeviceCaps(desktop, (int)DESKTOPVERTRES);
+
+            var screenScalingFactor =
+                (double)physicalScreenHeight / SystemParameters.PrimaryScreenHeight;
+            //SystemParameters.PrimaryScreenHeight;
+
+            return screenScalingFactor;
+        }
+
+
+        /// <summary>
+        /// 该函数检索一指定窗口的客户区域或整个屏幕的显示设备上下文环境的句柄，
+        /// 以后可以在GDI函数中使用该句柄来在设备上下文环境中绘图。
+        /// </summary>
+        /// <param name="hWnd">设备上下文环境被检索的窗口的句柄，如果该值为NULL，GetDC则检索整个屏幕的设备上下文环境。</param>
+        /// <returns>如果成功，返回指定窗口客户区的设备上下文环境；如果失败，返回值为Null。</returns>
+        [DllImport("user32")]
+        public static extern IntPtr GetDC(IntPtr hWnd);
+        /// <summary>
+        /// 该函数释放设备上下文环境（DC）供其他应用程序使用。函数的效果与设备上下文环境类型有关。
+        /// 它只释放公用的和设备上下文环境，对于类或私有的则无效。
+        /// </summary>
+        /// <param name="hWnd">指向要释放的设备上下文环境所在的窗口的句柄。</param>
+        /// <param name="hDC">指向要释放的设备上下文环境的句柄。</param>
+        /// <returns>如果释放成功，则返回值为1；如果没有释放成功，则返回值为0。</returns>
+        [DllImport("user32")]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        [DllImport("user32")]
+        public static extern bool GetCursorPos(out System.Drawing.Point pt);
+        [DllImport("gdi32")]
+        static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
     }
 }
