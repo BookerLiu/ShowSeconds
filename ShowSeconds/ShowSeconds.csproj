@@ -253,6 +253,7 @@
       <DependentUpon>SecondsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Util\DispatcherBuild.cs" />
+    <Compile Include="Util\HideWindowUtil.cs" />
     <Compile Include="Util\ScreenUtil.cs" />
     <Compile Include="ViewModel\SecondsDataContext.cs" />
     <Compile Include="App.xaml.cs">

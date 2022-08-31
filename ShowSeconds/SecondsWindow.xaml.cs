@@ -1,4 +1,5 @@
-﻿using Gma.System.MouseKeyHook;
+﻿using GeekDesk.Util;
+using Gma.System.MouseKeyHook;
 using ShowSeconds.Common;
 using ShowSeconds.Util;
 using ShowSeconds.ViewModel;
@@ -88,6 +89,8 @@ namespace ShowSeconds
                 secondsHook.MouseDownExt += SecondsBakColorFun;
                 secondsHook.MouseUpExt += SecondsHookSetFuc;
             }));
+
+            HideWindowUtil.HideAltTab(this);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
