@@ -39,7 +39,7 @@ namespace ShowSeconds
 
         private static double lProportion = 0.82;
         private static double tProportion = 0.03;
-        private static int sleepTime = 1000;
+        private static int sleepTime = 1500;
         public SecondsWindow()
         {
             SecondsDataContext dc = new SecondsDataContext
@@ -65,7 +65,7 @@ namespace ShowSeconds
             {
                 lProportion = 0.82;
                 tProportion = 0.03;
-                sleepTime = 1000;
+                sleepTime = 1500;
             }
 
             BGBorder.Background = scb;
@@ -100,9 +100,6 @@ namespace ShowSeconds
                         FormatMS(DateTime.Now.Second);
             SecondsDataContext dc = this.DataContext as SecondsDataContext;
             dc.Seconds = str;
-
-            this.DataContext = null;
-            this.DataContext = dc;
         }
 
 
@@ -181,7 +178,7 @@ namespace ShowSeconds
                                 if (CalculateLight(theamColor) > 255 / 2)
                                 {
                                     //light
-                                    BGBorder.Background = Constants.lightBG;
+                                    BGBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(theamColor.A, theamColor.R, theamColor.G, theamColor.B));
                                     SecondsText.Foreground = Constants.lightFont;
                                 }
                                 else
