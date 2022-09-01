@@ -1,8 +1,11 @@
-﻿using Gma.System.MouseKeyHook;
+﻿using GeekDesk.Util;
+using Gma.System.MouseKeyHook;
+using ShowSeconds.Common;
 using ShowSeconds.Util;
 using ShowSeconds.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -33,6 +36,10 @@ namespace ShowSeconds
 
         private bool expandClock = true; //是否展开时钟
         private System.Windows.Forms.Timer timer;
+
+        private static double lProportion = 0.82;
+        private static double tProportion = 0.03;
+        private static int sleepTime = 1500;
         public SecondsWindow()
         {
             SecondsDataContext dc = new SecondsDataContext
@@ -46,6 +53,21 @@ namespace ShowSeconds
             {
                 Opacity = 0.8
             };
+
+
+            try
+            {
+                lProportion = Convert.ToDouble(ConfigurationManager.AppSettings["LProportion"]);
+                tProportion = Convert.ToDouble(ConfigurationManager.AppSettings["TProportion"]);
+                sleepTime = Convert.ToInt32(ConfigurationManager.AppSettings["DelayTime"]);
+            }
+            catch (Exception ex)
+            {
+                lProportion = 0.82;
+                tProportion = 0.03;
+                sleepTime = 1500;
+            }
+
             BGBorder.Background = scb;
             this.DataContext = dc;
             this.Topmost = true;
@@ -67,6 +89,8 @@ namespace ShowSeconds
                 secondsHook.MouseDownExt += SecondsBakColorFun;
                 secondsHook.MouseUpExt += SecondsHookSetFuc;
             }));
+
+            HideWindowUtil.HideAltTab(this);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -76,9 +100,6 @@ namespace ShowSeconds
                         FormatMS(DateTime.Now.Second);
             SecondsDataContext dc = this.DataContext as SecondsDataContext;
             dc.Seconds = str;
-
-            this.DataContext = null;
-            this.DataContext = dc;
         }
 
 
@@ -101,7 +122,6 @@ namespace ShowSeconds
             {
                 if (ScreenUtil.IsPrimaryFullScreen()) return;
 
-                int sleepTime = 800;
                 App.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, new Action(() =>
                 {
                     int x = e.X;
@@ -115,8 +135,23 @@ namespace ShowSeconds
                         && y > 1037 / h * height
                         && y < 1074 / h * height)
                     {
-                        Thread.Sleep(sleepTime);
-                        System.Drawing.Color c = GetBottomBeforeColor();
+
+                        System.Drawing.Color c;
+                        int count = sleepTime;
+                        do
+                        {
+                            c = GetBottomBeforeColor();
+                            if (c.A != beforeColor.A
+                            || c.R != beforeColor.R
+                            || c.G != beforeColor.G
+                            || c.B != beforeColor.B)
+                            {
+                                break;
+                            }
+                            Thread.Sleep(50);
+                            count -= 50;
+                        } while (count > 0);
+
                         if (c.A != beforeColor.A
                             || c.R != beforeColor.R
                             || c.G != beforeColor.G
@@ -138,13 +173,28 @@ namespace ShowSeconds
 
                             if (!BGBorder.IsVisible)
                             {
+
+                                System.Drawing.Color theamColor = GetColor(1919, 1079);
+                                if (CalculateLight(theamColor) > 255 / 2)
+                                {
+                                    //light
+                                    BGBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(theamColor.A, theamColor.R, theamColor.G, theamColor.B));
+                                    SecondsText.Foreground = Constants.lightFont;
+                                }
+                                else
+                                {
+                                    // dark
+                                    BGBorder.Background = Constants.darkBG;
+                                    SecondsText.Foreground = Constants.darkFont;
+                                }
+
                                 SecondsDataContext dc = this.DataContext as SecondsDataContext;
                                 dc.Seconds = (DateTime.Now.Hour).ToString() + ":" +
                                    FormatMS(DateTime.Now.Minute) + ":" +
                                    FormatMS(DateTime.Now.Second);
 
-                                int sx = (int)(SystemParameters.PrimaryScreenWidth * 0.82);
-                                int sMarginBottom = (int)(SystemParameters.WorkArea.Height * 0.03);
+                                int sx = (int)(SystemParameters.PrimaryScreenWidth * lProportion);
+                                int sMarginBottom = (int)(SystemParameters.WorkArea.Height * tProportion);
                                 Left = sx - Width;
                                 Top = SystemParameters.WorkArea.Height - Height;
                                 BGBorder.Visibility = Visibility.Visible;
@@ -205,6 +255,22 @@ namespace ShowSeconds
             double height = SystemParameters.PrimaryScreenHeight;
             System.Drawing.Point p = new System.Drawing.Point((int)(w2 / w * width), (int)(h2 / h * height));
             return ScreenUtil.GetColorAt(p);
+        }
+
+
+        private static int CalculateLight(System.Drawing.Color color)
+        {
+            int[] colorArr = new int[] { color.R, color.G, color.B };
+
+            int max = 0;
+            int min = 255;
+            foreach (int i in colorArr)
+            {
+                max = Math.Max(max, i);
+                min = Math.Min(min, i);
+            }
+            int avg = (max + min) / 2;
+            return avg;
         }
 
     }
